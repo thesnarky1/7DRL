@@ -3,7 +3,7 @@
            ------------
 
 Intro:
-    Game starts with you and your classmates sitting in some lecture. You're browsing iconhazcheeseburger on yor laptop rather than pay attention, of course. Finally you fall asleep and whack your head on the desk (of course), and get transported via one way ticket to lala land. 
+    Game starts with you and your classmates sitting in some lecture. You're browsing iconhazcheeseburger on your laptop rather than paying attention, of course. Finally you fall asleep and whack your head on the desk (of course), and get transported via one way ticket to lala land. 
 
     (Hey, I felt the need for an intro to set up WHY I'm writing a cat rogue-like)... really I just want my kitty from Witac back.
 
@@ -15,6 +15,9 @@ Mechanics:
     Cats wearing armor? I could dig it, it is a dream... dude, like nun-chuck stuffed mice
     Doggy doors allow for passage but not sight
     sense of smell goes farther than sight (around corners), only picks up certain items, not walls
+    sense of hearing goes further still for noisy items, perhaps travels through grates on the floor as well
+
+    idea here is to create an environment you want to slink in, not just run straight through. Encourage smelling around corners, listening at grates/stairs, walking slowly and deliberately.
 
 Verbs:
     open door (hey, cats are smart)
@@ -31,13 +34,15 @@ Verbs:
     scratch - possibly scratch will bring the vacuum closer as the human sees something that needs fixing?
     smell - sits a turn and reveals things within your scent radius
     listen - sits a turn and reveals noisy objects for a ways around... maybe sound can go up vents?
+    sight - see an extra (3?) spaces in the direction you're facing (passive)
+    pounce - 3 squares straight forwards anything in the way affects you
 
 Enemies:
-    Vacuum - Noisy, hear it rooms away, 
+    Vacuum - Noisy, hear it rooms away, unkillable, fast
     Other cats
     Dogs
     Tiny kids (tail pulling!)
-    Mouse traps
+    Mouse traps (passive enemies, unsmellable, unhearable, hard to see unless you go slow)
 
 
 Prey:
@@ -51,9 +56,9 @@ Items:
     Ball of yarn - wastes a turn, yippee
     belled ball - might distract other cats?
     scratching post - sharpens claws
-    can of food
-    water bowl
-    food bowl
+    can of food - scratch multiple times to open
+    water bowl - drink
+    food bowl - eat
 
 
 Food:
@@ -62,5 +67,5 @@ Food:
     Water - fixes thirst, comes from faucets/toilet/bowls
     Wet food - fancier, restores more health, restores vigor, partially helps thirst
     prey bodies - Yummy! Choke on the bones (3% chance)
-
+    poisoned cheese for mice - sickness/death
 
