@@ -2,20 +2,20 @@
 
 (c-declare "#include <ncurses.h>")
 (define test-map (list
-  (list "##################################################")
-  (list "#..#.........#.#.................................#")
-  (list "#..#..#......###.................................#")
-  (list "#.....#......................#####......#........#")
-  (list "#######......................~~~~#......#........#")
-  (list "#........................~~~~~..~#...............#")
-  (list "#.................~~~~~~~~~......................#")
-  (list "#................~~~~~~..........................#")
-  (list "#........#.......~~~~..................###+###...#")
-  (list "########+#..##....~~~...#..............#.....#...#")
-  (list "#........#.........~~....#.............#.....+...#")
-  (list "#........#........~~......#............#+#####...#")
-  (list "#........#.......~~..............................#")
-  (list "##################################################")))
+   "##################################################"
+   "#..#.........#.#.................................#"
+   "#..#..#......###.................................#"
+   "#.....#......................#####......#........#"
+   "#######......................~~~~#......#........#"
+   "#........................~~~~~..~#...............#"
+   "#.................~~~~~~~~~......................#"
+   "#................~~~~~~..........................#"
+   "#........#.......~~~~..................###+###...#"
+   "########+#..##....~~~...#..............#.....#...#"
+   "#........#.........~~....#.............#.....+...#"
+   "#........#........~~......#............#+#####...#"
+   "#........#.......~~..............................#"
+   "##################################################"))
 
 ;;Global var definitions
 (define char-index 0)
@@ -148,23 +148,34 @@
     (lambda ()
         (char->integer (ncurses-input))))
 
-;;Function to draw our map to the console
+;;Function to draw a given character at a given spot
+(define move-draw-char
+    (c-lambda (int int char) void "mvaddch(___arg1, ___arg2, ___arg3);"))
+
+;;Function to draw the map
 (define draw-map
     (lambda (map)
-       (if (not (null? map))
-            (let ((to-draw (car map)))
-                (draw-map-row to-draw)
-                (draw-map (cdr map))))))
-
-
+        (let ((map-counter 0))
+            (for-each (lambda (map-row)
+                        (let map-row-loop ((x 0)
+                                           (char (string-ref map-row 0))
+                                           (map-row-len (string-length map-row)))
+                            (if (< x map-row-len)
+                                (begin
+                                    (move-draw-char map-counter x char)
+                                    (if (< (+ x 1) map-row-len)
+                                        (map-row-loop (+ x 1) (string-ref map-row (+ x 1)) map-row-len)))))
+                        (set! map-counter (+ map-counter 1)))
+                      map))))
+                                    
 ;;Actual code goes below here, functions go above, 
 ;;no exceptions!
 (ncurses-init)
-(draw-map-row "Hello World")
 (let loop ((test-char (get-input-character)))
     (if (not (eq? test-char 27))
         (begin
-            (draw-map-row (string (integer->char test-char)))
+            (draw-map test-map)
+            (refresh-screen)
             (loop (get-input-character)))
         (ncurses-end)))
 (print "Goodbye!\n")
