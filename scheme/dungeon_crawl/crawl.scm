@@ -68,6 +68,10 @@
         (vector-set! character CHARACTER-STRENGTH 10)
         (vector-set! character CHARACTER-SPEED 15)))
 
+;;;;;;;;;;;;;;;;;;;;;;;
+;;Character functions;;
+;;;;;;;;;;;;;;;;;;;;;;;
+
 ;;Function to return the character's name
 (define get-char-name
     (lambda ()
@@ -103,6 +107,16 @@
         (print (get-char-max-hp))
         (print "hp")))
 
+;;Function to put the character on the screen
+(define draw-character
+    (lambda ()
+        (move-draw-char CHARACTER-Y CHARACTER-X #\@)
+        (ncurses-move-cursor CHARACTER-Y CHARACTER-X)))
+
+;;;;;;;;;;;;;;;;;;;;;;;
+;;Game Tick Functions;;
+;;;;;;;;;;;;;;;;;;;;;;;
+
 ;;Function to do one game tick
 (define do-tick
     (lambda (tmp-tick-stack)
@@ -128,21 +142,22 @@
     (lambda (tmp-command)
         (print tmp-command)))
 
+
+;;;;;;;;;;;;;;;;;;;;;
+;;NCurses Functions;;
+;;;;;;;;;;;;;;;;;;;;;
+
 ;;Function to init ncurses
 (define ncurses-init
-    (c-lambda () int "initscr();leaveok(curscr, TRUE);" ))
+    (c-lambda () int "initscr();/*leaveok(curscr, TRUE);*/noecho();" ))
 
 ;;Function to kill NCurses
 (define ncurses-end
     (c-lambda () int "endwin();" ))
 
 ;;Function to refresh the screen
-(define refresh-screen
+(define ncurses-refresh-screen
     (c-lambda () void "refresh();"))
-
-;;Function to draw a row on the screen
-(define draw-map-row
-    (c-lambda (nonnull-char-string) void "addstr(___arg1);"))
 
 ;;Function to block for user input
 (define ncurses-input
@@ -151,10 +166,9 @@
 ;;Function to move cursor to a given location
 (define ncurses-move-cursor
     (c-lambda (int int) void "move(___arg1, ___arg2);"))
-        
 
 ;;Function to snag the user input, 
-;;will block thanks to the called function
+;;will block thanks to ncurses-input
 (define get-input-character
     (lambda ()
         (char->integer (ncurses-input))))
@@ -162,6 +176,11 @@
 ;;Function to draw a given character at a given spot
 (define move-draw-char
     (c-lambda (int int char) void "mvaddch(___arg1, ___arg2, ___arg3);"))
+
+
+;;;;;;;;;;;;;;;;;
+;;Map Functions;;
+;;;;;;;;;;;;;;;;;
 
 ;;Function to draw the map
 (define draw-map
@@ -179,11 +198,6 @@
                         (set! map-counter (+ map-counter 1)))
                       map))))
 
-;;Function to put the character on the screen
-(define draw-character
-    (lambda ()
-        (move-draw-char CHARACTER-Y CHARACTER-X #\@)))
-
 ;;Function to draw all our map objects
 (define draw-whole-map
     (lambda (map)
@@ -191,20 +205,36 @@
         (draw-character)
         (ncurses-move-cursor CHARACTER-Y CHARACTER-X)))
 
-;;Actual code goes below here, functions go above, 
-;;no exceptions!
+
+;;;;;;;;;;;;;
+;;GAME CODE;;
+;;;;;;;;;;;;;
+
+;;init the screen
 (ncurses-init)
+
+;;Draw our map to start the view
 (draw-whole-map test-map)
+
+;;Block for input and deal with it as it comes
 (let loop ((test-char (get-input-character)))
     (if (not (eq? test-char 27))
         (begin
+            ;;Case the char and deal with the input
             (case test-char
-                [(108) (set! CHARACTER-X (+ CHARACTER-X 1))]
-                [(107) (set! CHARACTER-Y (- CHARACTER-Y 1))]
-                [(106) (set! CHARACTER-Y (+ CHARACTER-Y 1))]
-                [(104) (set! CHARACTER-X (- CHARACTER-X 1))])
+                [(108) (set! CHARACTER-X (+ CHARACTER-X 1))] ;;l - move right
+                [(107) (set! CHARACTER-Y (- CHARACTER-Y 1))] ;;k - move up
+                [(106) (set! CHARACTER-Y (+ CHARACTER-Y 1))] ;;j - move down
+                [(104) (set! CHARACTER-X (- CHARACTER-X 1))] ;;h - move left
+            )
+            ;;Refresh the screen
             (draw-whole-map test-map)
-            (refresh-screen)
+            ;;(draw-character)
+            (ncurses-refresh-screen)
             (loop (get-input-character)))
+
+        ;;Kill off the screen
         (ncurses-end)))
-(print "Goodbye!\n")
+
+;;Encourage them to return
+(print "Farewell hero!\n")
