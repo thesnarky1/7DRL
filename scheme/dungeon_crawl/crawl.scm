@@ -17,7 +17,7 @@
    "#........#.......~~..............................#"
    "##################################################"))
 
-;;Global var definitions
+;;Character var definitions
 (define char-index 0)
 (define CHARACTER-NAME char-index)
 (set! char-index (+ char-index 1))
@@ -30,8 +30,11 @@
 (define CHARACTER-SPEED char-index)
 (set! char-index (+ char-index 1))
 
+(define CHARACTER-Y 5)
+(define CHARACTER-X 5)
+
 ;;Create our character vector
-(define character-arr (make-vector char-index))
+(define character (make-vector char-index))
 
 (define monster-index 0)
 (define MONSTER-NAME monster-index)
@@ -42,6 +45,8 @@
 (set! monster-index (+ monster-index 1))
 (define MONSTER-SPEED monster-index)
 (set! monster-index (+ monster-index 1))
+(define MONSTER-ICON monster-index)
+(set! monster-index (+ monster-index 1))
 
 ;;Monsters vector, it holds a series of individual monster
 ;;vectors of the form:
@@ -49,43 +54,44 @@
 ;;MONSTER-HP
 ;;MONSTER-STRENGTH
 ;;MONSTER-SPEED
-(define monsters (vector (vector "Orc" 20 5 10)
-                         (vector "Goblin" 10 2 14)
-                         (vector "Dragon" 80 20 20)))
+;;MONSTER-ICON
+(define monsters (vector (vector "Orc" 20 5 10 #\o)
+                         (vector "Goblin" 10 2 14 #\g)
+                         (vector "Dragon" 80 20 20 #\D)))
 
 ;;Function to create a character
 (define create-char
     (lambda (name)
-        (vector-set! character-arr CHARACTER-NAME name)
-        (vector-set! character-arr CHARACTER-HP 100)
-        (vector-set! character-arr CHARACTER-MAX-HP 100)
-        (vector-set! character-arr CHARACTER-STRENGTH 10)
-        (vector-set! character-arr CHARACTER-SPEED 15)))
+        (vector-set! character CHARACTER-NAME name)
+        (vector-set! character CHARACTER-HP 100)
+        (vector-set! character CHARACTER-MAX-HP 100)
+        (vector-set! character CHARACTER-STRENGTH 10)
+        (vector-set! character CHARACTER-SPEED 15)))
 
 ;;Function to return the character's name
 (define get-char-name
     (lambda ()
-        (vector-ref character-arr CHARACTER-NAME)))
+        (vector-ref character CHARACTER-NAME)))
 
 ;;Function to return the character's HP
 (define get-char-hp
     (lambda ()
-        (vector-ref character-arr CHARACTER-HP)))
+        (vector-ref character CHARACTER-HP)))
 
 ;;Function to return the character's max HP
 (define get-char-max-hp
     (lambda ()
-        (vector-ref character-arr CHARACTER-MAX-HP)))
+        (vector-ref character CHARACTER-MAX-HP)))
 
 ;;Function to return the character's strength
 (define get-char-strength
     (lambda ()
-        (vector-ref character-arr CHARACTER-STRENGTH)))
+        (vector-ref character CHARACTER-STRENGTH)))
 
 ;;Function to return the character's speed
 (define get-char-speed
     (lambda ()
-        (vector-ref character-arr CHARACTER-SPEED)))
+        (vector-ref character CHARACTER-SPEED)))
 
 ;;Function to render a string for a character
 (define write-char
@@ -124,7 +130,7 @@
 
 ;;Function to init ncurses
 (define ncurses-init
-    (c-lambda () int "initscr();" ))
+    (c-lambda () int "initscr();leaveok(curscr, TRUE);" ))
 
 ;;Function to kill NCurses
 (define ncurses-end
@@ -141,6 +147,11 @@
 ;;Function to block for user input
 (define ncurses-input
     (c-lambda () char "___result = getch();"))
+
+;;Function to move cursor to a given location
+(define ncurses-move-cursor
+    (c-lambda (int int) void "move(___arg1, ___arg2);"))
+        
 
 ;;Function to snag the user input, 
 ;;will block thanks to the called function
@@ -167,14 +178,32 @@
                                         (map-row-loop (+ x 1) (string-ref map-row (+ x 1)) map-row-len)))))
                         (set! map-counter (+ map-counter 1)))
                       map))))
-                                    
+
+;;Function to put the character on the screen
+(define draw-character
+    (lambda ()
+        (move-draw-char CHARACTER-Y CHARACTER-X #\@)))
+
+;;Function to draw all our map objects
+(define draw-whole-map
+    (lambda (map)
+        (draw-map map)
+        (draw-character)
+        (ncurses-move-cursor CHARACTER-Y CHARACTER-X)))
+
 ;;Actual code goes below here, functions go above, 
 ;;no exceptions!
 (ncurses-init)
+(draw-whole-map test-map)
 (let loop ((test-char (get-input-character)))
     (if (not (eq? test-char 27))
         (begin
-            (draw-map test-map)
+            (case test-char
+                [(108) (set! CHARACTER-X (+ CHARACTER-X 1))]
+                [(107) (set! CHARACTER-Y (- CHARACTER-Y 1))]
+                [(106) (set! CHARACTER-Y (+ CHARACTER-Y 1))]
+                [(104) (set! CHARACTER-X (- CHARACTER-X 1))])
+            (draw-whole-map test-map)
             (refresh-screen)
             (loop (get-input-character)))
         (ncurses-end)))
