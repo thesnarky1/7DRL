@@ -1,34 +1,39 @@
 ;;Sample game just to test out ncurses and some ideas for roguelike
 
 (c-declare "#include <ncurses.h>")
-  (define-syntax define-object
-    (syntax-rules ()
-      [(_ (name . varlist)
-          ((var1 val1) ...)
-          ((var2 val2) ...))
-       (define name
-         (lambda varlist
-           (let* ([var1 val1] ...)
-             (letrec ([var2 val2] ...)
-               (lambda (msg . args)
-                 (case msg
-                   [(var2) (apply var2 args)]
-                   ...
-                   [else
-                    (assertion-violation 'name
-                      "invalid message"
-                      (cons msg args))]))))))]
-      [(_ (name . varlist) ((var2 val2) ...))
-       (define-object (name . varlist)
-                      ()
-                      ((var2 val2) ...))]))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;Junk to break out to OOP lib;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define-syntax define-object
+  (syntax-rules ()
+    [(_ (name . varlist)
+        ((var1 val1) ...)
+        ((var2 val2) ...))
+     (define name
+       (lambda varlist
+         (let* ([var1 val1] ...)
+           (letrec ([var2 val2] ...)
+             (lambda (msg . args)
+               (case msg
+                 [(var2) (apply var2 args)]
+                 ...
+                 [else
+                  (assertion-violation 'name
+                    "invalid message"
+                    (cons msg args))]))))))]
+    [(_ (name . varlist) ((var2 val2) ...))
+     (define-object (name . varlist)
+                    ()
+                    ((var2 val2) ...))]))
 
  ; send-message abstracts the act of sending a message from the act
  ; of applying a procedure and allows the message to be unquoted.
-  (define-syntax send-message
-    (syntax-rules ()
-      [(_ obj msg arg ...)
-       (obj 'msg arg ...)]));)
+(define-syntax send-message
+  (syntax-rules ()
+    [(_ obj msg arg ...)
+     (obj 'msg arg ...)]))
 
 
 
@@ -48,10 +53,16 @@
    "#........#.......~~..............................#"
    "##################################################"))
 
+;;;;;;;;;;;;;;;;;;;;;;
+;;Object Definitions;;
+;;;;;;;;;;;;;;;;;;;;;;
+
 ;;Living object holds everything that's alive
-(define-object (living name symbol x y z hp max-hp str inv)
+;;Play with defaults in here?
+(define-object (living name symbol x y z hp max-hp str inv speed)
     ((get-name      (lambda () name))
      (get-symbol    (lambda () symbol))
+     (set-symbol    (lambda (new-symbol) (set! symbol new-symbol)))
      (get-x         (lambda () x))
      (set-x         (lambda (new-x) (set! x new-x)))
      (get-y         (lambda () y))
@@ -60,38 +71,23 @@
      (get-hp        (lambda () hp))
      (get-max-hp    (lambda () max-hp))
      (get-str       (lambda () str))
+     (get-speed     (lambda () speed))
+     (set-speed     (lambda (new-speed) (set! speed new-speed)))
      (get-inv       (lambda() inv))))
 
-;;Character var definitions
-;;(define char-index 0)
-;;(define CHARACTER-NAME char-index)
-;;(set! char-index (+ char-index 1))
-;;(define CHARACTER-HP char-index)
-;;(set! char-index (+ char-index 1))
-;;(define CHARACTER-MAX-HP char-index)
-;;(set! char-index (+ char-index 1))
-;;(define CHARACTER-STRENGTH char-index)
-;;(set! char-index (+ char-index 1))
-;;(define CHARACTER-SPEED char-index)
-;;(set! char-index (+ char-index 1))
+;;Tile object holds our tile properties
+(define-object (tile symbol x y z passable)
+    ((get-symbol    (lambda () symbol))
+     (set-symbol    (lambda (new-symbol) (set! symbol new-symbol)))
+     (get-x         (lambda () x))
+     (set-x         (lambda (new-x) (set! x new-x)))
+     (get-y         (lambda () y))
+     (set-y         (lambda (new-y) (set! y new-y)))
+     (get-z         (lambda () z))
+     (set-z         (lambda (new-z) (set! z new-z)))
+     (get-passable  (lambda () passable))
+     (set-passable  (lambda (new-passable) (set! passable new-passable)))))
 
-;;(define CHARACTER-Y 5)
-;;(define CHARACTER-X 5)
-
-;;Create our character vector
-;;(define character (make-vector char-index))
-;;
-;;(define monster-index 0)
-;;(define MONSTER-NAME monster-index)
-;;(set! monster-index (+ monster-index 1))
-;;(define MONSTER-HP monster-index)
-;;(set! monster-index (+ monster-index 1))
-;;(define MONSTER-STRENGTH monster-index)
-;;(set! monster-index (+ monster-index 1))
-;;(define MONSTER-SPEED monster-index)
-;;(set! monster-index (+ monster-index 1))
-;;(define MONSTER-ICON monster-index)
-;;(set! monster-index (+ monster-index 1))
 
 ;;Monsters vector, it holds a series of individual monster
 ;;vectors of the form:
@@ -103,62 +99,6 @@
 (define monsters (vector (vector "Orc" 20 5 10 #\o)
                          (vector "Goblin" 10 2 14 #\g)
                          (vector "Dragon" 80 20 20 #\D)))
-
-;;Function to create a character
-;;(define create-char
-;;    (lambda (name)
-;;        (vector-set! character CHARACTER-NAME name)
-;;        (vector-set! character CHARACTER-HP 100)
-;;        (vector-set! character CHARACTER-MAX-HP 100)
-;;        (vector-set! character CHARACTER-STRENGTH 10)
-;;        (vector-set! character CHARACTER-SPEED 15)))
-
-;;;;;;;;;;;;;;;;;;;;;;;
-;;Character functions;;
-;;;;;;;;;;;;;;;;;;;;;;;
-
-;;;;Function to return the character's name
-;;(define get-char-name
-;;    (lambda ()
-;;        (vector-ref character CHARACTER-NAME)))
-;;
-;;;;Function to return the character's HP
-;;(define get-char-hp
-;;    (lambda ()
-;;        (vector-ref character CHARACTER-HP)))
-;;
-;;;;Function to return the character's max HP
-;;(define get-char-max-hp
-;;    (lambda ()
-;;        (vector-ref character CHARACTER-MAX-HP)))
-;;
-;;;;Function to return the character's strength
-;;(define get-char-strength
-;;    (lambda ()
-;;        (vector-ref character CHARACTER-STRENGTH)))
-;;
-;;;;Function to return the character's speed
-;;(define get-char-speed
-;;    (lambda ()
-;;        (vector-ref character CHARACTER-SPEED)))
-;;
-;;;;Function to render a string for a character
-;;(define write-char
-;;    (lambda()
-;;        (print (get-char-name))
-;;        (print ": ")
-;;        (print (get-char-hp))
-;;        (print " of ")
-;;        (print (get-char-max-hp))
-;;        (print "hp")))
-
-;;Function to put the character on the screen
-(define draw-character
-    (lambda (character)
-        (let ((x (send-message character get-x))
-              (y (send-message character get-y)))
-            (move-draw-char y x (send-message character get-symbol))
-            (ncurses-move-cursor y x))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;
 ;;Game Tick Functions;;
@@ -224,6 +164,13 @@
 (define move-draw-char
     (c-lambda (int int char) void "mvaddch(___arg1, ___arg2, ___arg3);"))
 
+;;Function to put a living object on the screen
+(define ncurses-draw-living
+    (lambda (living-object)
+        (let ((x (send-message living-object get-x))
+              (y (send-message living-object get-y)))
+            (move-draw-char y x (send-message living-object get-symbol)))))
+
 
 ;;;;;;;;;;;;;;;;;
 ;;Map Functions;;
@@ -249,7 +196,7 @@
 (define draw-whole-map
     (lambda (map character)
         (draw-map map)
-        (draw-character character)
+        (ncurses-draw-living character)
         (ncurses-move-cursor (send-message character get-y) (send-message character get-x))))
 
 
@@ -261,7 +208,7 @@
 (ncurses-init)
 
 ;;Init out character
-(define character (living "Segfault" #\@ 5 5 0 100 100 10 '()))
+(define character (living "Segfault" #\@ 5 5 0 100 100 10 '() 15))
 
 ;;Draw our map to start the view
 (draw-whole-map test-map character)
