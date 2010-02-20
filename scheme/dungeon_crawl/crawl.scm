@@ -1,6 +1,37 @@
 ;;Sample game just to test out ncurses and some ideas for roguelike
 
 (c-declare "#include <ncurses.h>")
+  (define-syntax define-object
+    (syntax-rules ()
+      [(_ (name . varlist)
+          ((var1 val1) ...)
+          ((var2 val2) ...))
+       (define name
+         (lambda varlist
+           (let* ([var1 val1] ...)
+             (letrec ([var2 val2] ...)
+               (lambda (msg . args)
+                 (case msg
+                   [(var2) (apply var2 args)]
+                   ...
+                   [else
+                    (assertion-violation 'name
+                      "invalid message"
+                      (cons msg args))]))))))]
+      [(_ (name . varlist) ((var2 val2) ...))
+       (define-object (name . varlist)
+                      ()
+                      ((var2 val2) ...))]))
+
+ ; send-message abstracts the act of sending a message from the act
+ ; of applying a procedure and allows the message to be unquoted.
+  (define-syntax send-message
+    (syntax-rules ()
+      [(_ obj msg arg ...)
+       (obj 'msg arg ...)]));)
+
+
+
 (define test-map (list
    "##################################################"
    "#..#.........#.#.................................#"
@@ -17,36 +48,50 @@
    "#........#.......~~..............................#"
    "##################################################"))
 
-;;Character var definitions
-(define char-index 0)
-(define CHARACTER-NAME char-index)
-(set! char-index (+ char-index 1))
-(define CHARACTER-HP char-index)
-(set! char-index (+ char-index 1))
-(define CHARACTER-MAX-HP char-index)
-(set! char-index (+ char-index 1))
-(define CHARACTER-STRENGTH char-index)
-(set! char-index (+ char-index 1))
-(define CHARACTER-SPEED char-index)
-(set! char-index (+ char-index 1))
+;;Living object holds everything that's alive
+(define-object (living name symbol x y z hp max-hp str inv)
+    ((get-name      (lambda () name))
+     (get-symbol    (lambda () symbol))
+     (get-x         (lambda () x))
+     (set-x         (lambda (new-x) (set! x new-x)))
+     (get-y         (lambda () y))
+     (set-y         (lambda (new-y) (set! y new-y)))
+     (get-z         (lambda () z))
+     (get-hp        (lambda () hp))
+     (get-max-hp    (lambda () max-hp))
+     (get-str       (lambda () str))
+     (get-inv       (lambda() inv))))
 
-(define CHARACTER-Y 5)
-(define CHARACTER-X 5)
+;;Character var definitions
+;;(define char-index 0)
+;;(define CHARACTER-NAME char-index)
+;;(set! char-index (+ char-index 1))
+;;(define CHARACTER-HP char-index)
+;;(set! char-index (+ char-index 1))
+;;(define CHARACTER-MAX-HP char-index)
+;;(set! char-index (+ char-index 1))
+;;(define CHARACTER-STRENGTH char-index)
+;;(set! char-index (+ char-index 1))
+;;(define CHARACTER-SPEED char-index)
+;;(set! char-index (+ char-index 1))
+
+;;(define CHARACTER-Y 5)
+;;(define CHARACTER-X 5)
 
 ;;Create our character vector
-(define character (make-vector char-index))
-
-(define monster-index 0)
-(define MONSTER-NAME monster-index)
-(set! monster-index (+ monster-index 1))
-(define MONSTER-HP monster-index)
-(set! monster-index (+ monster-index 1))
-(define MONSTER-STRENGTH monster-index)
-(set! monster-index (+ monster-index 1))
-(define MONSTER-SPEED monster-index)
-(set! monster-index (+ monster-index 1))
-(define MONSTER-ICON monster-index)
-(set! monster-index (+ monster-index 1))
+;;(define character (make-vector char-index))
+;;
+;;(define monster-index 0)
+;;(define MONSTER-NAME monster-index)
+;;(set! monster-index (+ monster-index 1))
+;;(define MONSTER-HP monster-index)
+;;(set! monster-index (+ monster-index 1))
+;;(define MONSTER-STRENGTH monster-index)
+;;(set! monster-index (+ monster-index 1))
+;;(define MONSTER-SPEED monster-index)
+;;(set! monster-index (+ monster-index 1))
+;;(define MONSTER-ICON monster-index)
+;;(set! monster-index (+ monster-index 1))
 
 ;;Monsters vector, it holds a series of individual monster
 ;;vectors of the form:
@@ -60,58 +105,60 @@
                          (vector "Dragon" 80 20 20 #\D)))
 
 ;;Function to create a character
-(define create-char
-    (lambda (name)
-        (vector-set! character CHARACTER-NAME name)
-        (vector-set! character CHARACTER-HP 100)
-        (vector-set! character CHARACTER-MAX-HP 100)
-        (vector-set! character CHARACTER-STRENGTH 10)
-        (vector-set! character CHARACTER-SPEED 15)))
+;;(define create-char
+;;    (lambda (name)
+;;        (vector-set! character CHARACTER-NAME name)
+;;        (vector-set! character CHARACTER-HP 100)
+;;        (vector-set! character CHARACTER-MAX-HP 100)
+;;        (vector-set! character CHARACTER-STRENGTH 10)
+;;        (vector-set! character CHARACTER-SPEED 15)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;
 ;;Character functions;;
 ;;;;;;;;;;;;;;;;;;;;;;;
 
-;;Function to return the character's name
-(define get-char-name
-    (lambda ()
-        (vector-ref character CHARACTER-NAME)))
-
-;;Function to return the character's HP
-(define get-char-hp
-    (lambda ()
-        (vector-ref character CHARACTER-HP)))
-
-;;Function to return the character's max HP
-(define get-char-max-hp
-    (lambda ()
-        (vector-ref character CHARACTER-MAX-HP)))
-
-;;Function to return the character's strength
-(define get-char-strength
-    (lambda ()
-        (vector-ref character CHARACTER-STRENGTH)))
-
-;;Function to return the character's speed
-(define get-char-speed
-    (lambda ()
-        (vector-ref character CHARACTER-SPEED)))
-
-;;Function to render a string for a character
-(define write-char
-    (lambda()
-        (print (get-char-name))
-        (print ": ")
-        (print (get-char-hp))
-        (print " of ")
-        (print (get-char-max-hp))
-        (print "hp")))
+;;;;Function to return the character's name
+;;(define get-char-name
+;;    (lambda ()
+;;        (vector-ref character CHARACTER-NAME)))
+;;
+;;;;Function to return the character's HP
+;;(define get-char-hp
+;;    (lambda ()
+;;        (vector-ref character CHARACTER-HP)))
+;;
+;;;;Function to return the character's max HP
+;;(define get-char-max-hp
+;;    (lambda ()
+;;        (vector-ref character CHARACTER-MAX-HP)))
+;;
+;;;;Function to return the character's strength
+;;(define get-char-strength
+;;    (lambda ()
+;;        (vector-ref character CHARACTER-STRENGTH)))
+;;
+;;;;Function to return the character's speed
+;;(define get-char-speed
+;;    (lambda ()
+;;        (vector-ref character CHARACTER-SPEED)))
+;;
+;;;;Function to render a string for a character
+;;(define write-char
+;;    (lambda()
+;;        (print (get-char-name))
+;;        (print ": ")
+;;        (print (get-char-hp))
+;;        (print " of ")
+;;        (print (get-char-max-hp))
+;;        (print "hp")))
 
 ;;Function to put the character on the screen
 (define draw-character
-    (lambda ()
-        (move-draw-char CHARACTER-Y CHARACTER-X #\@)
-        (ncurses-move-cursor CHARACTER-Y CHARACTER-X)))
+    (lambda (character)
+        (let ((x (send-message character get-x))
+              (y (send-message character get-y)))
+            (move-draw-char y x (send-message character get-symbol))
+            (ncurses-move-cursor y x))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;
 ;;Game Tick Functions;;
@@ -200,10 +247,10 @@
 
 ;;Function to draw all our map objects
 (define draw-whole-map
-    (lambda (map)
+    (lambda (map character)
         (draw-map map)
-        (draw-character)
-        (ncurses-move-cursor CHARACTER-Y CHARACTER-X)))
+        (draw-character character)
+        (ncurses-move-cursor (send-message character get-y) (send-message character get-x))))
 
 
 ;;;;;;;;;;;;;
@@ -213,8 +260,11 @@
 ;;init the screen
 (ncurses-init)
 
+;;Init out character
+(define character (living "Segfault" #\@ 5 5 0 100 100 10 '()))
+
 ;;Draw our map to start the view
-(draw-whole-map test-map)
+(draw-whole-map test-map character)
 
 ;;Block for input and deal with it as it comes
 (let loop ((test-char (get-input-character)))
@@ -222,14 +272,13 @@
         (begin
             ;;Case the char and deal with the input
             (case test-char
-                [(108) (set! CHARACTER-X (+ CHARACTER-X 1))] ;;l - move right
-                [(107) (set! CHARACTER-Y (- CHARACTER-Y 1))] ;;k - move up
-                [(106) (set! CHARACTER-Y (+ CHARACTER-Y 1))] ;;j - move down
-                [(104) (set! CHARACTER-X (- CHARACTER-X 1))] ;;h - move left
+                [(108) (send-message character set-x (+ (send-message character get-x) 1))] ;;l - move right
+                [(107) (send-message character set-y (- (send-message character get-y) 1))] ;;k - move up
+                [(106) (send-message character set-y (+ (send-message character get-y) 1))] ;;j - move down
+                [(104) (send-message character set-x (- (send-message character get-x) 1))] ;;h - move left
             )
             ;;Refresh the screen
-            (draw-whole-map test-map)
-            ;;(draw-character)
+            (draw-whole-map test-map character)
             (ncurses-refresh-screen)
             (loop (get-input-character)))
 
