@@ -1,3 +1,6 @@
+;;Code from The Scheme Programming Langauge, Version 4 by Kent Dybvig
+;;http://www.scheme.com/tspl/
+
 (library (tspl oop)
   (export define-object send-message)
   (import (rnrs))
