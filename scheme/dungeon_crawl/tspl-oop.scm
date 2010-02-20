@@ -1,9 +1,9 @@
 ;;Code from The Scheme Programming Langauge, Version 4 by Kent Dybvig
 ;;http://www.scheme.com/tspl/
 
-(library (tspl oop)
-  (export define-object send-message)
-  (import (rnrs))
+;;(library (tspl oop)
+;;  (export define-object send-message)
+;;  (import (rnrs))
 
  ; define-object creates an object constructor that uses let* to bind
  ; local fields and letrec to define the exported procedures.  An
@@ -37,6 +37,6 @@
   (define-syntax send-message
     (syntax-rules ()
       [(_ obj msg arg ...)
-       (obj 'msg arg ...)])))
+       (obj 'msg arg ...)]));)
 
 
