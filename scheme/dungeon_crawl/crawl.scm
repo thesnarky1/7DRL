@@ -36,7 +36,9 @@
      (obj 'msg arg ...)]))
 
 
-
+;;Real map should be a vector of tile vectors... 
+;;read in something like the below and hold the vector to allow for 
+;;simple getting of x,y coordinates
 (define test-map (list
    "##################################################"
    "#..#.........#.#.................................#"
@@ -76,7 +78,7 @@
      (get-inv       (lambda() inv))))
 
 ;;Tile object holds our tile properties
-(define-object (tile symbol x y z passable)
+(define-object (tile symbol x y z passable visible living item)
     ((get-symbol    (lambda () symbol))
      (set-symbol    (lambda (new-symbol) (set! symbol new-symbol)))
      (get-x         (lambda () x))
@@ -86,7 +88,14 @@
      (get-z         (lambda () z))
      (set-z         (lambda (new-z) (set! z new-z)))
      (get-passable  (lambda () passable))
-     (set-passable  (lambda (new-passable) (set! passable new-passable)))))
+     (set-passable  (lambda (new-passable) (set! passable new-passable)))
+     (get-visible  (lambda () visible))
+     (set-visible  (lambda (new-visible) (set! visible new-visible)))
+     (get-living  (lambda () living))
+     (set-living  (lambda (new-living) (set! living new-living)))
+     (get-item  (lambda () item))
+     (set-item  (lambda (new-item) (set! item new-item)))
+     ))
 
 
 ;;Monsters vector, it holds a series of individual monster
@@ -175,6 +184,11 @@
 ;;;;;;;;;;;;;;;;;
 ;;Map Functions;;
 ;;;;;;;;;;;;;;;;;
+
+;;Function to prepare our overall map object
+(define prepare-map
+    (lambda (orig-map)
+       orig-map))
 
 ;;Function to draw the map
 (define draw-map
