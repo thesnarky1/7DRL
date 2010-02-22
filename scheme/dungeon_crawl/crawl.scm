@@ -70,7 +70,9 @@
      (get-y         (lambda () y))
      (set-y         (lambda (new-y) (set! y new-y)))
      (get-z         (lambda () z))
+     (set-z         (lambda (new-z) (set! z new-z)))
      (get-hp        (lambda () hp))
+     (set-hp        (lambda (new-hp) (set! hp new-hp)))
      (get-max-hp    (lambda () max-hp))
      (get-str       (lambda () str))
      (get-speed     (lambda () speed))
@@ -78,7 +80,7 @@
      (get-inv       (lambda() inv))))
 
 ;;Tile object holds our tile properties
-(define-object (tile symbol x y z passable visible living item)
+(define-object (tile-obj symbol x y z passable visible living item)
     ((get-symbol    (lambda () symbol))
      (set-symbol    (lambda (new-symbol) (set! symbol new-symbol)))
      (get-x         (lambda () x))
@@ -89,12 +91,12 @@
      (set-z         (lambda (new-z) (set! z new-z)))
      (get-passable  (lambda () passable))
      (set-passable  (lambda (new-passable) (set! passable new-passable)))
-     (get-visible  (lambda () visible))
-     (set-visible  (lambda (new-visible) (set! visible new-visible)))
-     (get-living  (lambda () living))
-     (set-living  (lambda (new-living) (set! living new-living)))
-     (get-item  (lambda () item))
-     (set-item  (lambda (new-item) (set! item new-item)))
+     (get-visible   (lambda () visible))
+     (set-visible   (lambda (new-visible) (set! visible new-visible)))
+     (get-living    (lambda () living))
+     (set-living    (lambda (new-living) (set! living new-living)))
+     (get-item      (lambda () item))
+     (set-item      (lambda (new-item) (set! item new-item)))
      ))
 
 
@@ -108,6 +110,26 @@
 (define monsters (vector (vector "Orc" 20 5 10 #\o)
                          (vector "Goblin" 10 2 14 #\g)
                          (vector "Dragon" 80 20 20 #\D)))
+
+;;;;;;;;;;;;;;;;;;
+;;Game Functions;;
+;;;;;;;;;;;;;;;;;;
+
+;;Function to Move a living object
+(define move-living 
+    (lambda (living src dest)
+        (if ((send-message src get-passable))
+            (if ((send-message dest get-passable))
+                (let ((enemy (send-message dest get-living)))
+                    (if (null? enemy)
+                        (let ((x (send-message dest get-x))
+                              (y (send-message dest get-y))
+                              (z (send-message dest get-z)))
+                            (send-message src set-living '())
+                            (send-message dest set-living (list living))
+                            (send-message living set-x x)
+                            (send-message living set-y y)
+                            (send-message living set-z z))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;
 ;;Game Tick Functions;;
@@ -186,33 +208,77 @@
 ;;;;;;;;;;;;;;;;;
 
 ;;Function to prepare our overall map object
-(define prepare-map
-    (lambda (orig-map)
-       orig-map))
-
-;;Function to draw the map
-(define draw-map
+(define create-tile-set
     (lambda (map)
-        (let ((map-counter 0))
-            (for-each (lambda (map-row)
-                        (let map-row-loop ((x 0)
-                                           (char (string-ref map-row 0))
-                                           (map-row-len (string-length map-row)))
-                            (if (< x map-row-len)
-                                (begin
-                                    (move-draw-char map-counter x char)
-                                    (if (< (+ x 1) map-row-len)
-                                        (map-row-loop (+ x 1) (string-ref map-row (+ x 1)) map-row-len)))))
-                        (set! map-counter (+ map-counter 1)))
-                      map))))
+        (list->vector (create-map-vector map 0))))
+
+;;Function that creates the entire map vector
+(define create-map-vector
+    (lambda (source y)
+        (let ((curr-row (car source)))
+            (if (= (length source) 1)
+                (cons (list->vector (create-tiles-from-string (string->list curr-row)
+                                                              y
+                                                              0))
+                      '())
+                (cons (list->vector (create-tiles-from-string (string->list curr-row)
+                                                              y
+                                                              0))
+                      (create-map-vector (cdr source) (+ y 1)))))))
+
+;;Function that creates a Tile vector given a string
+(define create-tiles-from-string
+    (lambda (char-list y x)
+        (let ((curr-char (car char-list)))
+            (if (= (length char-list) 1)
+                (cons (tile-from-char curr-char y x) '())
+                (cons (tile-from-char curr-char y x)
+                      (create-tiles-from-string (cdr char-list)
+                                                y
+                                                (+ x 1)))))))
+
+;;Function to create a tile given a characetr
+(define tile-from-char
+    (lambda (char y x)
+        (if (char=? char #\#)
+            (tile-obj char x y 0 (lambda () #f) (lambda () #f) '() '())
+            (tile-obj char x y 0 (lambda () #t) (lambda () #t) '() '()))))
+
 
 ;;Function to draw all our map objects
 (define draw-whole-map
     (lambda (map character)
-        (draw-map map)
+        (draw-tile-set map 0)
         (ncurses-draw-living character)
         (ncurses-move-cursor (send-message character get-y) (send-message character get-x))))
 
+;;Function to draw a tileset
+(define draw-tile-set
+    (lambda (tile-set index)
+        (if (< index (vector-length tile-set))
+            (begin 
+                (draw-tile-row (vector-ref tile-set index) 0)
+                (draw-tile-set tile-set (+ index 1))))))
+
+;;Function to draw a tile row 
+(define draw-tile-row
+    (lambda (tile-set-row index)
+        (if (< index (vector-length tile-set-row))
+            (let ((curr-tile (vector-ref tile-set-row index)))
+                (move-draw-char (send-message curr-tile get-y) 
+                                (send-message curr-tile get-x)
+                                (send-message curr-tile get-symbol))
+                (draw-tile-row tile-set-row (+ index 1))))))
+
+;;Function to fetch a tile identified by X/Y coords
+(define fetch-tile
+    (lambda (map x y)
+        (if (< y (vector-length map))
+            (let ((row (vector-ref map y)))
+                (if (< x (vector-length row))
+                    (vector-ref row x)
+                    #f))
+            #f)))
 
 ;;;;;;;;;;;;;
 ;;GAME CODE;;
@@ -221,25 +287,35 @@
 ;;init the screen
 (ncurses-init)
 
-;;Init out character
+;;Init our character
 (define character (living "Segfault" #\@ 5 5 0 100 100 10 '() 15))
 
+;;Init the map
+(define our-map (create-tile-set test-map))
+
 ;;Draw our map to start the view
-(draw-whole-map test-map character)
+(draw-whole-map our-map character)
 
 ;;Block for input and deal with it as it comes
 (let loop ((test-char (get-input-character)))
     (if (not (eq? test-char 27))
-        (begin
+        ;:Get characters x/y and tile for future reference
+        (let* ((char-x (send-message character get-x))
+              (char-y (send-message character get-y))
+              (char-tile (fetch-tile our-map char-x char-y)))
             ;;Case the char and deal with the input
             (case test-char
-                [(108) (send-message character set-x (+ (send-message character get-x) 1))] ;;l - move right
-                [(107) (send-message character set-y (- (send-message character get-y) 1))] ;;k - move up
-                [(106) (send-message character set-y (+ (send-message character get-y) 1))] ;;j - move down
-                [(104) (send-message character set-x (- (send-message character get-x) 1))] ;;h - move left
+;;                [(108) (send-message character set-x (+ (send-message character get-x) 1))] ;;l - move right
+;;                [(107) (send-message character set-y (- (send-message character get-y) 1))] ;;k - move up
+;;                [(106) (send-message character set-y (+ (send-message character get-y) 1))] ;;j - move down
+;;                [(104) (send-message character set-x (- (send-message character get-x) 1))] ;;h - move left
+                [(108) (move-living character char-tile (fetch-tile our-map (+ char-x 1) char-y))] ;;l - move right
+                [(107) (move-living character char-tile (fetch-tile our-map char-x (- char-y 1)))] ;;k - move up
+                [(106) (move-living character char-tile (fetch-tile our-map char-x (+ char-y 1)))] ;;j - move down
+                [(104) (move-living character char-tile (fetch-tile our-map (- char-x 1) char-y))] ;;h - move left
             )
             ;;Refresh the screen
-            (draw-whole-map test-map character)
+            (draw-whole-map our-map character)
             (ncurses-refresh-screen)
             (loop (get-input-character)))
 
@@ -248,3 +324,4 @@
 
 ;;Encourage them to return
 (print "Farewell hero!\n")
+
