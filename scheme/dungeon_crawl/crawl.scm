@@ -74,13 +74,17 @@
      (get-hp        (lambda () hp))
      (set-hp        (lambda (new-hp) (set! hp new-hp)))
      (get-max-hp    (lambda () max-hp))
+     (set-max-hp    (lambda (new-max-hp) (set! max-hp new-max-hp)))
      (get-str       (lambda () str))
+     (set-str       (lambda (new-str) (set! str new-str)))
      (get-speed     (lambda () speed))
      (set-speed     (lambda (new-speed) (set! speed new-speed)))
-     (get-inv       (lambda() inv))))
+     (get-inv       (lambda() inv))
+     (set-inv       (lambda(new-inv) (set! inv new-inv)))
+     ))
 
 ;;Tile object holds our tile properties
-(define-object (tile-obj symbol x y z passable visible living item)
+(define-object (tile-obj symbol x y z passable visible blocks-vision living item)
     ((get-symbol    (lambda () symbol))
      (set-symbol    (lambda (new-symbol) (set! symbol new-symbol)))
      (get-x         (lambda () x))
@@ -93,12 +97,17 @@
      (set-passable  (lambda (new-passable) (set! passable new-passable)))
      (get-visible   (lambda () visible))
      (set-visible   (lambda (new-visible) (set! visible new-visible)))
+     (get-blocks-vision  (lambda () blocks-vision))
+     (set-blocks-vision  (lambda (new-blocks-vision) (set! blocks-vision new-blocks-vision)))
      (get-living    (lambda () living))
      (set-living    (lambda (new-living) (set! living new-living)))
      (get-item      (lambda () item))
      (set-item      (lambda (new-item) (set! item new-item)))
      ))
 
+;;Global look up vars
+(define impassable-tiles (list #\# #\~ #\+))
+(define vision-blocking-tiles (list #\# #\+))
 
 ;;Monsters vector, it holds a series of individual monster
 ;;vectors of the form:
@@ -240,9 +249,17 @@
 ;;Function to create a tile given a characetr
 (define tile-from-char
     (lambda (char y x)
-        (if (char=? char #\#)
-            (tile-obj char x y 0 (lambda () #f) (lambda () #f) '() '())
-            (tile-obj char x y 0 (lambda () #t) (lambda () #t) '() '()))))
+        (let ((new-tile (tile-obj char x y 0 
+                                  (lambda () #t) 
+                                  (lambda () #t) 
+                                  (lambda () #f)
+                                  '()
+                                  '())))
+            (if (member char impassable-tiles)
+                (send-message new-tile set-passable (lambda () #f)))
+            (if (member char vision-blocking-tiles)
+                (send-message new-tile set-blocks-vision (lambda () #t)))
+            new-tile)))
 
 
 ;;Function to draw all our map objects
@@ -305,10 +322,6 @@
               (char-tile (fetch-tile our-map char-x char-y)))
             ;;Case the char and deal with the input
             (case test-char
-;;                [(108) (send-message character set-x (+ (send-message character get-x) 1))] ;;l - move right
-;;                [(107) (send-message character set-y (- (send-message character get-y) 1))] ;;k - move up
-;;                [(106) (send-message character set-y (+ (send-message character get-y) 1))] ;;j - move down
-;;                [(104) (send-message character set-x (- (send-message character get-x) 1))] ;;h - move left
                 [(108) (move-living character char-tile (fetch-tile our-map (+ char-x 1) char-y))] ;;l - move right
                 [(107) (move-living character char-tile (fetch-tile our-map char-x (- char-y 1)))] ;;k - move up
                 [(106) (move-living character char-tile (fetch-tile our-map char-x (+ char-y 1)))] ;;j - move down
