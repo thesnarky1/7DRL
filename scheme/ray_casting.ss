@@ -147,29 +147,45 @@
 (define cast-rays
     (lambda (env char-x char-y)
         (clear-cells env)                ;;Clear everything first
-        (cast-rays-help env char-x char-y 0)))
+        (cast-rays-help env char-x char-y 0 '())))
 
 ;;Function to do the real work of casting some rays
 (define cast-rays-help
-    (lambda (env char-x char-y i)
+    (lambda (env char-x char-y i visited-cells)
         (if (<= i 360)
             (let ((x (cos (* i 0.01745)))
                   (y (sin (* i 0.01745))))
-                  (trace-ray env char-x char-y x y (+ char-x .0) (+ char-y .0) 0)
-                  (cast-rays-help env char-x char-y (+ i 1))))))
+                  (let ((new-visited-cells (trace-ray env 
+                                                      char-x 
+                                                      char-y 
+                                                      x 
+                                                      y 
+                                                      (+ char-x .0) 
+                                                      (+ char-y .0) 
+                                                      0 
+                                                      visited-cells)))
+                      (cast-rays-help env char-x char-y (+ i 1) new-visited-cells)))
+         (pretty-print visited-cells))))
 
 ;;Function to trace the specific ray to its end
 (define trace-ray
-    (lambda (env char-x char-y x y dx dy i)
+    (lambda (env char-x char-y x y dx dy i visited-cells)
         (if (not (> i VIEW-RADIUS))
-            (let* ((cell-x (round dx))
-                   (cell-y (round dy))
-                   (cell (get-cell env cell-x cell-y)))
-                (if cell
-                    (begin
-                        (set-cell-visible cell #t)
-                        (if (cell-opaque? env cell-x cell-y)
-                            (trace-ray env char-x char-y x y (+ dx x) (+ dy y) (+ i 1)))))))))
+            (let* ((cell-x (inexact->exact (round dx)))
+                   (cell-y (inexact->exact (round dy)))
+                   (cell (get-cell env cell-x cell-y))
+                   (coords (cons cell-x cell-y)))
+                ;;Check to make sure its a valid cell and we haven't touched it yet
+                (if cell 
+                    (if (not (member coords visited-cells))
+                        (let ((new-visited-cells (cons coords visited-cells)))
+                            (set-cell-visible cell #t)
+                            (if (cell-opaque? env cell-x cell-y)
+                                (trace-ray env char-x char-y x y (+ dx x) (+ dy y) (+ i 1) new-visited-cells)
+                                new-visited-cells))
+                        (trace-ray env char-x char-y x y (+ dx x) (+ dy y) (+ i 1) visited-cells))
+                    visited-cells))
+            visited-cells)))
                 
 
 
@@ -283,4 +299,4 @@
                     (read-loop (read-char)))
                 (print "Goodbye\n")))))
         
-
+(ray-casting-demo our-env)
