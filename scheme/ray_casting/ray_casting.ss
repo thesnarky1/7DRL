@@ -168,7 +168,7 @@
                 (if cell
                     (begin
                         (set-cell-visible cell #t)
-                        (if (cell-opaque? env cell-x cell-y)
+                        (if (cell-opaque? cell)
                             (trace-ray env char-x char-y x y (+ dx x) (+ dy y) (+ i 1)))))))))
                 
  
@@ -202,20 +202,18 @@
  
 ;;Function to tell if a cell is passable
 (define cell-passable?
-    (lambda (env x y)
-        (let ((cell (get-cell env x y))) ;;Get the cell
-            (not (member (car cell) IMPASSABLE-TILES))))) ;;Check to see if symbol is in our list of impassable tiles
+    (lambda (cell)
+        (not (member (car cell) IMPASSABLE-TILES)))) ;;Check to see if symbol is in our list of impassable tiles
  
 ;;Function to tell if a cell is opaque
 (define cell-opaque?
-    (lambda (env x y)
-        (let ((cell (get-cell env x y))) ;;Get the cell
-            (not (member (car cell) OPAQUE-TILES))))) ;;Check to see if symbol is in our list of opaque tiles
+    (lambda (cell)
+        (not (member (car cell) OPAQUE-TILES)))) ;;Check to see if symbol is in our list of opaque tiles
  
 ;;Function to 'move' our 'character' to another cell
 (define move-to
     (lambda (env x y)
-        (if (cell-passable? env x y) ;;Check to make sure they can move there
+        (if (cell-passable? (get-cell env x y)) ;;Check to make sure they can move there
             (begin
                 (set! char-x x) ;;'Move' them by changing our global vars
                 (set! char-y y)))))
