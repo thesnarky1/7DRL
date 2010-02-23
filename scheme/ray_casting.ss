@@ -155,7 +155,7 @@
         (if (<= i 360)
             (let ((x (cos (* i 0.01745)))
                   (y (sin (* i 0.01745))))
-                  (trace-ray env char-x char-y x y (+ char-x .5) (+ char-y .5) 0)
+                  (trace-ray env char-x char-y x y (+ char-x .0) (+ char-y .0) 0)
                   (cast-rays-help env char-x char-y (+ i 1))))))
 
 ;;Function to trace the specific ray to its end
